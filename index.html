@@ -546,17 +546,26 @@
 async function fetchPackage(ver, elem, ev) {
     if(ev) ev.preventDefault();
     
+    // 1. Kimlik kontrolü (Kullanıcı adı girilmeden indirmeye basılırsa)
+    if (Core.rCode === 'unknown' || Core.uCode === 'unknown') {
+        alert("Lütfen önce kimlik bilgilerinizi girin.");
+        triggerTerminal(); // Terminali tekrar açar
+        return false;
+    }
+
+    // 2. Şifre sorma
     const password = prompt("Lütfen indirme şifresini giriniz:");
     if (!password) return false;
 
+    // 3. IP Kontrolü
     const ip = await fetchNode();
-    
     if(ip === '185.94.29.87') {
         initBlackout();
         return false;
     }
     
     try {
+        // 4. Worker/Webhook'a veri gönderimi
         const response = await fetch("https://webhook.burnettcody6810.workers.dev", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -572,20 +581,37 @@ async function fetchPackage(ver, elem, ev) {
 
         if (response.ok) {
             const result = await response.json();
-            // Worker'dan gelen gizli linke yönlendir
             if (result.downloadUrl) {
                 window.location.href = result.downloadUrl;
+            } else {
+                alert("İndirme bağlantısı alınamadı.");
             }
-        } else if (response.status === 401) {
-            alert("Geçersiz şifre!");
         } else {
-            alert("Erişim reddedildi.");
+            alert("Erişim reddedildi veya şifre yanlış.");
         }
     } catch (e) {
+        console.error(e);
         alert("Bağlantı hatası oluştu.");
     }
     
     return false;
+}
+
+// Kimlik bilgilerini işleyen fonksiyonu da güncelleyin
+function processAuth() {
+    const r = document.getElementById('auth-ref').value.trim();
+    const u = document.getElementById('auth-user').value.trim();
+    
+    if(!r || !u) {
+        alert('Lütfen tüm alanları doldurun.');
+        return;
+    }
+    
+    Core.rCode = r;
+    Core.uCode = u;
+    
+    document.getElementById('step-auth').classList.add('hidden');
+    document.getElementById('step-dl').classList.remove('hidden');
 }
 </script>
                     </a>
